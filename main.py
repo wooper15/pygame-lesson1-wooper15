@@ -1,4 +1,5 @@
 import asyncio
+import random
 import pygame
 
 pygame.init()
@@ -7,21 +8,25 @@ WIDTH = 800
 HEIGHT = 600
 
 PLAYER_SIZE = 50    
+PROJECTILE_ONE_SIZE = PLAYER_SIZE // 3
 SPEED = 3
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("My Pygame Game")
 
-x = 375
-y = 275
+x = WIDTH // 2 - PLAYER_SIZE // 2
+y = HEIGHT - PLAYER_SIZE
 
 TARGET_RADIUS = 25
-target_x = 650
-target_y = 300
+target_x = WIDTH // 2
+target_y = TARGET_RADIUS
+
+projectile_one_x = WIDTH // 2 - PROJECTILE_ONE_SIZE // 2
+projectile_one_y = y - PROJECTILE_ONE_SIZE - 5
 
 
 async def main():
-    global x, y
+    global x, y, target_x
 
     running = True
 
@@ -54,9 +59,27 @@ async def main():
         # DRAW
         screen.fill((30, 30, 60))
 
+        projectile_rect = pygame.Rect(
+            projectile_one_x,
+            projectile_one_y,
+            PROJECTILE_ONE_SIZE,
+            PROJECTILE_ONE_SIZE
+        )
+        # Use the circle's bounding box for pygame's rectangle collision check.
+        target_rect = pygame.Rect(
+            target_x - TARGET_RADIUS,
+            target_y - TARGET_RADIUS,
+            TARGET_RADIUS * 2,
+            TARGET_RADIUS * 2
+        )
+        target_hit = projectile_rect.colliderect(target_rect)
+        if target_hit:
+            # Keep the target's full diameter inside the window.
+            target_x = random.randint(TARGET_RADIUS, WIDTH - TARGET_RADIUS)
+
         pygame.draw.circle(
             screen,
-            (255, 0, 0),
+            (0, 255, 0) if target_hit else (255, 0, 0),
             (target_x, target_y),
             TARGET_RADIUS
         )
@@ -65,6 +88,17 @@ async def main():
             screen,
             (255, 200, 50),
             (x, y, PLAYER_SIZE, PLAYER_SIZE)
+        )
+
+        pygame.draw.rect(
+            screen,
+            (80, 220, 255),
+            (
+                projectile_one_x,
+                projectile_one_y,
+                PROJECTILE_ONE_SIZE,
+                PROJECTILE_ONE_SIZE
+            )
         )
 
         pygame.display.flip()
