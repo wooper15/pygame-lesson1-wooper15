@@ -7,7 +7,7 @@ WIDTH = 800
 HEIGHT = 600
 
 PLAYER_SIZE = 50    
-SPEED = 6
+SPEED = 3
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("My Pygame Game")
