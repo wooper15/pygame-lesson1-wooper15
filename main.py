@@ -15,6 +15,10 @@ pygame.display.set_caption("My Pygame Game")
 x = 375
 y = 275
 
+TARGET_RADIUS = 25
+target_x = 650
+target_y = 300
+
 
 async def main():
     global x, y
@@ -43,8 +47,19 @@ async def main():
         if keys[pygame.K_DOWN]:
             y += SPEED
 
+        # Subtract PLAYER_SIZE so the whole square stays inside the window.
+        x = max(0, min(x, WIDTH - PLAYER_SIZE))
+        y = max(0, min(y, HEIGHT - PLAYER_SIZE))
+
         # DRAW
         screen.fill((30, 30, 60))
+
+        pygame.draw.circle(
+            screen,
+            (255, 0, 0),
+            (target_x, target_y),
+            TARGET_RADIUS
+        )
 
         pygame.draw.rect(
             screen,
