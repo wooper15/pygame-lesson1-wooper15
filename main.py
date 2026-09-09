@@ -11,7 +11,8 @@ HEIGHT = 600
 PLAYER_SIZE = 50    
 # Make the projectile one third as wide and tall as the player square.
 PROJECTILE_ONE_SIZE = PLAYER_SIZE // 3
-SPEED = 5
+SPEED = 7
+VELOCITY = 15
 
 # Create the window using the width and height chosen above.
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -43,7 +44,7 @@ score = 0
 
 async def main():
     # These global values are changed while the game loop is running.
-    global x, y, target_x, score, active_projectiles
+    global x, y, target_x, target_y, score, active_projectiles
 
     # Use Pygame's default font at size 36 for the score display.
     font = pygame.font.Font(None, 36)
@@ -59,6 +60,19 @@ async def main():
     timer_start = None
     time_remaining = 30
     running = True
+
+    def restart_game():
+        nonlocal timer_start, time_remaining
+        global x, y, target_x, target_y, score, active_projectiles
+
+        score = 0
+        active_projectiles = []
+        x = WIDTH // 2 - PLAYER_SIZE // 2
+        y = HEIGHT - PLAYER_SIZE
+        target_x = WIDTH // 2
+        target_y = TARGET_RADIUS
+        timer_start = pygame.time.get_ticks()
+        time_remaining = 30
 
     while running:
 
@@ -79,10 +93,7 @@ async def main():
                     started = True
                     timer_start = pygame.time.get_ticks()
                 elif time_remaining == 0 and restart_button_rect.collidepoint(event.pos):
-                    score = 0
-                    active_projectiles = []
-                    timer_start = pygame.time.get_ticks()
-                    time_remaining = 30
+                    restart_game()
 
         if started:
             time_remaining = max(0, 30 - (pygame.time.get_ticks() - timer_start) // 1000)
@@ -94,16 +105,16 @@ async def main():
 
         if game_active:
             # Move the player a few pixels for each frame while an arrow key is held.
-            if keys[pygame.K_LEFT]:
+            if keys[pygame.K_LEFT] or keys[pygame.K_a]:
                 x -= SPEED
 
-            if keys[pygame.K_RIGHT]:
+            if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 x += SPEED
 
-            if keys[pygame.K_UP]:
+            if keys[pygame.K_UP] or keys[pygame.K_w]:
                 y -= SPEED
 
-            if keys[pygame.K_DOWN]:
+            if keys[pygame.K_DOWN] or keys[pygame.K_s]:
                 y += SPEED
 
         # Keep the square's top edge at or below the screen midpoint.
@@ -126,7 +137,7 @@ async def main():
         remaining_projectiles = []
         if game_active:
             for projectile in active_projectiles:
-                projectile.y -= SPEED
+                projectile.y -= VELOCITY
                 if projectile.colliderect(target_rect):
                     target_hit = True
                     score += 1
@@ -169,6 +180,10 @@ async def main():
         timer_text = font.render(f"Time: {time_remaining}", True, (255, 255, 255))
         timer_rect = timer_text.get_rect(topleft=(10, 10))
         screen.blit(timer_text, timer_rect)
+
+        coordinates_text = font.render(f"X: {x}, Y: {y}", True, (255, 255, 255))
+        coordinates_rect = coordinates_text.get_rect(bottomright=(WIDTH - 10, HEIGHT - 10))
+        screen.blit(coordinates_text, coordinates_rect)
 
         # Show the completed frame on the screen.
         pygame.display.flip()
