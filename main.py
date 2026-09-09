@@ -1,7 +1,7 @@
 import asyncio
 import random
 import pygame
-
+# add a coldown to the shooting, add levels, add multiple enemys, change player's speed, add enemy movement
 # Start Pygame so its display, drawing, and input features are ready to use.
 pygame.init()
 
@@ -11,7 +11,7 @@ HEIGHT = 600
 PLAYER_SIZE = 50    
 # Make the projectile one third as wide and tall as the player square.
 PROJECTILE_ONE_SIZE = PLAYER_SIZE // 3
-SPEED = 3
+SPEED = 5
 
 # Create the window using the width and height chosen above.
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -47,6 +47,17 @@ async def main():
 
     # Use Pygame's default font at size 36 for the score display.
     font = pygame.font.Font(None, 36)
+    start_text = font.render("START", True, (255, 255, 255))
+    game_over_text = font.render("GAME OVER", True, (255, 255, 255))
+    restart_text = font.render("RESTART", True, (255, 255, 255))
+    start_button_rect = start_text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+    game_over_rect = game_over_text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+    restart_button_rect = restart_text.get_rect(
+        center=(WIDTH // 2, game_over_rect.bottom + 20)
+    )
+    started = False
+    timer_start = None
+    time_remaining = 30
     running = True
 
     while running:
@@ -58,27 +69,42 @@ async def main():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                projectile = projectile_template.copy()
-                projectile.centerx = x + PLAYER_SIZE // 2
-                projectile.bottom = y - 5
-                active_projectiles.append(projectile)
+                if started:
+                    projectile = projectile_template.copy()
+                    projectile.centerx = x + PLAYER_SIZE // 2
+                    projectile.bottom = y - 5
+                    active_projectiles.append(projectile)
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if not started and start_button_rect.collidepoint(event.pos):
+                    started = True
+                    timer_start = pygame.time.get_ticks()
+                elif time_remaining == 0 and restart_button_rect.collidepoint(event.pos):
+                    score = 0
+                    active_projectiles = []
+                    timer_start = pygame.time.get_ticks()
+                    time_remaining = 30
+
+        if started:
+            time_remaining = max(0, 30 - (pygame.time.get_ticks() - timer_start) // 1000)
+        game_active = started and time_remaining > 0
 
         # INPUT
         # Check which keyboard keys are currently held down.
         keys = pygame.key.get_pressed()
 
-        # Move the player a few pixels for each frame while an arrow key is held.
-        if keys[pygame.K_LEFT]:
-            x -= SPEED
+        if game_active:
+            # Move the player a few pixels for each frame while an arrow key is held.
+            if keys[pygame.K_LEFT]:
+                x -= SPEED
 
-        if keys[pygame.K_RIGHT]:
-            x += SPEED
+            if keys[pygame.K_RIGHT]:
+                x += SPEED
 
-        if keys[pygame.K_UP]:
-            y -= SPEED
+            if keys[pygame.K_UP]:
+                y -= SPEED
 
-        if keys[pygame.K_DOWN]:
-            y += SPEED
+            if keys[pygame.K_DOWN]:
+                y += SPEED
 
         # Keep the square's top edge at or below the screen midpoint.
         # max() and min() keep the player's position within both boundaries.
@@ -98,15 +124,16 @@ async def main():
         )
         target_hit = False
         remaining_projectiles = []
-        for projectile in active_projectiles:
-            projectile.y -= SPEED
-            if projectile.colliderect(target_rect):
-                target_hit = True
-                score += 1
-                target_x = random.randint(TARGET_RADIUS, WIDTH - TARGET_RADIUS)
-            elif projectile.bottom > 0:
-                remaining_projectiles.append(projectile)
-        active_projectiles = remaining_projectiles
+        if game_active:
+            for projectile in active_projectiles:
+                projectile.y -= SPEED
+                if projectile.colliderect(target_rect):
+                    target_hit = True
+                    score += 1
+                    target_x = random.randint(TARGET_RADIUS, WIDTH - TARGET_RADIUS)
+                elif projectile.bottom > 0:
+                    remaining_projectiles.append(projectile)
+            active_projectiles = remaining_projectiles
 
         # Draw the target; green indicates a hit and red means no hit this frame.
         pygame.draw.circle(
@@ -126,12 +153,22 @@ async def main():
         for projectile in active_projectiles:
             pygame.draw.rect(screen, (80, 220, 255), projectile)
 
+        if not started:
+            screen.blit(start_text, start_button_rect)
+        elif time_remaining == 0:
+            screen.blit(game_over_text, game_over_rect)
+            screen.blit(restart_text, restart_button_rect)
+
         # Convert the score text into a drawable Pygame surface.
         score_text = font.render(f"Score: {score}", True, (255, 255, 255))
         # Anchor the score's top-right corner inside the window.
         score_rect = score_text.get_rect(topright=(WIDTH - 10, 10))
         # Copy the rendered text onto the window at the selected position.
         screen.blit(score_text, score_rect)
+
+        timer_text = font.render(f"Time: {time_remaining}", True, (255, 255, 255))
+        timer_rect = timer_text.get_rect(topleft=(10, 10))
+        screen.blit(timer_text, timer_rect)
 
         # Show the completed frame on the screen.
         pygame.display.flip()
